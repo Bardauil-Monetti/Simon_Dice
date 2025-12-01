@@ -3,11 +3,11 @@
 int LED[4] = {1, 2, 3, 4};
 int boton[4] = {5, 7, 8, 9};
 volatile bool flag[4] = {0, 0, 0, 0};
-int tActual, tPrevio, tDelay = 500;
-int tActual2, tPrevio2, tDelay2;
-int tActual3, tPrevio3, tDelay3;
-int LEDon[10], lvl = 1; //hasta 10 rondas
-bool estado, win = true, show = true;
+int tActual, tPrevio = 0, tDelay = 500;
+int tActual2, tPrevio2 = 0, tDelay2;
+int tActual3, tPrevio3 = 0, tDelay3;
+int LEDon[10], lvl = 1, cont; //hasta 10 rondas
+bool estado = false, win = true, show = true;
 void IRAM_ATTR ISR1(){ flag[0] = true; }
 void IRAM_ATTR ISR2(){ flag[1] = true; }
 void IRAM_ATTR ISR3(){ flag[2] = true; }
@@ -30,16 +30,18 @@ void setup(){
 void loop(){
   //prender la secuencia de LEDs
   if(show){
-    for(int i = 0; i < lvl; i++){ //lo hago (nivel alcanzado) veces
+    cont = lvl;
+    while(cont){ //lo hago (nivel alcanzado) veces
       tDelay2 = random(2000, 6001);
       tActual2 = millis();
       if(tActual2 - tPrevio2 >= tDelay2){ //espero entre 2 y 6 segundos para prender el LED 
-        digitalWrite(LED[LEDon[i]], HIGH); //lo prendo
+        digitalWrite(LED[LEDon[cont]], HIGH); //lo prendo
         tDelay3 = random(700, 1001);
         tActual3 = millis();
         if(tActual3 - tPrevio3 >= tDelay3){ //espero entre 0.7 y 1 segundo
-          digitalWrite(LED[LEDon[i]], LOW); // lo apago
+          digitalWrite(LED[LEDon[cont]], LOW); // lo apago
           tPrevio3 = tActual3;
+          cont--;
         }
         tPrevio2 = tActual2;
       }
@@ -78,7 +80,6 @@ void loop(){
         }
         //si se pasaron todas las etapas sin perder
         else if(win){
-          i++; //pasamos de indice para que no siga comparando el nivel que ya se paso con los botones
           flag[j] = false;
           if(i == lvl){
             lvl++; // pasamos de nivel
@@ -88,6 +89,5 @@ void loop(){
         flag[j] = false;
       }
     }
-    if(win && lvl == i) i = lvl + 1;
   }
 }
