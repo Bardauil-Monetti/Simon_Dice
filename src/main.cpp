@@ -1,12 +1,12 @@
 #include <Arduino.h>
 
-int LED[4] = {1, 2, 3, 4};
+int LED[4] = {10, 2, 3, 4};
 int boton[4] = {5, 7, 8, 9};
 volatile bool flag[4] = {0, 0, 0, 0};
-int tActual, tPrevio = 0, tDelay = 500;
+int tActual, tPrevio = 0, cont;
 int tActual2, tPrevio2 = 0, tDelay2;
 int tActual3, tPrevio3 = 0, tDelay3;
-int LEDon[10], lvl = 1, cont; //hasta 10 rondas
+int LEDon[10], lvl = 1; //hasta 10 rondas
 bool estado = false, win = true, show = true;
 void IRAM_ATTR ISR1(){ flag[0] = true; }
 void IRAM_ATTR ISR2(){ flag[1] = true; }
@@ -31,15 +31,15 @@ void loop(){
   //prender la secuencia de LEDs
   if(show){
     cont = lvl;
+    tDelay2 = random(2000, 6001);
+    tDelay3 = random(700, 1001);
     while(cont){ //lo hago (nivel alcanzado) veces
-      tDelay2 = random(2000, 6001);
       tActual2 = millis();
       if(tActual2 - tPrevio2 >= tDelay2){ //espero entre 2 y 6 segundos para prender el LED 
-        digitalWrite(LED[LEDon[cont]], HIGH); //lo prendo
-        tDelay3 = random(700, 1001);
+        digitalWrite(LED[LEDon[cont - 1]], HIGH); //lo prendo
         tActual3 = millis();
         if(tActual3 - tPrevio3 >= tDelay3){ //espero entre 0.7 y 1 segundo
-          digitalWrite(LED[LEDon[cont]], LOW); // lo apago
+          digitalWrite(LED[LEDon[cont - 1]], LOW); // lo apago
           tPrevio3 = tActual3;
           cont--;
         }
@@ -47,29 +47,27 @@ void loop(){
       }
     }
     show = false;
-    win = true;
   }
   //escanear botones
-  for(int i = 0; i < lvl; i++){ // chequeo todas las etapas de la secuencia
+  cont = lvl;
+  win = true;
+  while(cont && win){ // chequeo todas las etapas de la secuencia
     for(int j = 0; j < 4; j++){
       if(flag[j]){ // escaneo los botones
-        if(j != LEDon[i]){
+        if(j != LEDon[cont - 1]){
           //si se aprieta uno mal
           lvl = 1; // se reinicia el nivel
-          //parapadeo todos los leds cada 500ms
-          tActual = millis();
-          if(tActual - tPrevio >= tDelay){
-            if(estado) estado = false;
-            else estado = true;
-            tPrevio = tActual;
-          }
-          if(estado){
-            for(int i = 0; i<4; i++){
-              digitalWrite(LED[i], HIGH);
+          //parapadeo todos los leds 4 veces cada 500ms
+          int cont2 = 4;
+          while(cont2){
+            tActual = millis();
+            if(tActual - tPrevio >= 500){
+              if(estado){estado = false;}
+              else{estado = true;}
+              cont2--;
             }
-          }else{
-            for(int i = 0; i<4; i++){
-              digitalWrite(LED[i], LOW);
+            for(int k = 0; k<4; k++){
+              digitalWrite(LED[k], estado);
             }
           }
           win = false;
@@ -78,16 +76,14 @@ void loop(){
             LEDon[k] = random(0, 4);
           }
         }
-        //si se pasaron todas las etapas sin perder
-        else if(win){
-          flag[j] = false;
-          if(i == lvl){
-            lvl++; // pasamos de nivel
-            show = true;
-          } 
-        }
         flag[j] = false;
+        cont--;
       }
     }
+  }
+  //si se pasaron todas las etapas sin perder
+  if(win){
+    lvl++; // pasamos de nivel
+    show = true; 
   }
 }
